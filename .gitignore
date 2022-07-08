@@ -1,0 +1,13 @@
+# ignore pycharm ide files
+./.idea/
+./__pycache__/
+
+
+# ignore stopwords
+cn_stopwords.txt
+
+# ignore data
+datalist.npy
+
+# ignore output pics
+pics/
