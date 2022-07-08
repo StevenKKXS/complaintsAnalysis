@@ -4,10 +4,10 @@
 
 
 # ignore stopwords
-./cn_stopwords.txt
+cn_stopwords.txt
 
 # ignore data
-./datalist.npy
+datalist.npy
 
 # ignore output pics
-./pics
+pics
