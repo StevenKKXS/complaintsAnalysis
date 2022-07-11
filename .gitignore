@@ -2,6 +2,8 @@
 .idea
 __pycache__
 
+# ignore trained model
+models
 
 # ignore stopwords
 cn_stopwords.txt

@@ -1,4 +1,3 @@
-
 import pandas as pd
 import matplotlib
 import numpy as np
@@ -39,10 +38,15 @@ def onehot_encoder(labels):
     return label_onehot, label_map
 
 
-def main():
+def train_and_eval(model_path='models/LSTM', random_state=42):
     # load data
     train_label_list, train_text_list, val_label_list, val_text_list, test_label_list, test_text_list, class_table = get_data(
         1)
+
+    label_list = train_label_list + val_label_list + test_label_list
+    text_list = train_text_list + val_text_list + test_text_list
+
+    Y, label_map = onehot_encoder(label_list)
 
     # 设置最频繁使用的50000个词
     MAX_NB_WORDS = 50000
@@ -50,11 +54,6 @@ def main():
     MAX_SEQUENCE_LENGTH = 150
     # 设置Embeddingceng层的维度
     EMBEDDING_DIM = 32
-
-    label_list = train_label_list + val_label_list + test_label_list
-    text_list = train_text_list + val_text_list + test_text_list
-
-    Y, label_map = onehot_encoder(label_list)
 
     tokenizer = Tokenizer(num_words=MAX_NB_WORDS, filters='!"#$%&()*+,-./:;<=>?@[\]^_`{|}~', lower=True)
     tokenizer.fit_on_texts(text_list)
@@ -70,7 +69,7 @@ def main():
     # print(Y.shape)
 
     # 拆分训练集和测试集
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.10, random_state=42)
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.10, random_state=random_state)
     print(X_train.shape, Y_train.shape)
     print(X_test.shape, Y_test.shape)
 
@@ -90,6 +89,11 @@ def main():
 
     accr = model.evaluate(X_test, Y_test)
     print('Test set\n  Loss: {:0.3f}\n  Accuracy: {:0.3f}'.format(accr[0], accr[1]))
+
+    # save model
+    model.save(model_path)
+
+    return model
 
 
 def get_dataset(mode='all'):
@@ -127,4 +131,4 @@ def draw_dataset_len_histogram(bins=10, max_len=None):
 
 
 if __name__ == "__main__":
-    main()
+    train_and_eval()
