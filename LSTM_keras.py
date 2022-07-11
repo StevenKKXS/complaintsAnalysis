@@ -1,7 +1,9 @@
+import keras.models
 import pandas as pd
 import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
 
 plt.rcParams['font.sans-serif'] = ['SimHei']
 plt.rcParams['axes.unicode_minus'] = False
@@ -15,6 +17,7 @@ from keras.callbacks import EarlyStopping
 from keras.layers import Dropout
 import jieba as jb
 import re
+import os.path as osp
 
 from data_process import *
 
@@ -74,7 +77,7 @@ def train_and_eval(model_path='models/LSTM', random_state=42):
     print(X_test.shape, Y_test.shape)
 
     model = Sequential()
-    model.add(Embedding(MAX_NB_WORDS, EMBEDDING_DIM, input_length=X.shape[1]))
+    model.add(Embedding(MAX_NB_WORDS, EMBEDDING_DIM, input_length=X.shape[1], mask_zero=True))
     model.add(SpatialDropout1D(0.2))
     model.add(LSTM(EMBEDDING_DIM, dropout=0.2, recurrent_dropout=0.2, activation='tanh'))
     model.add(Dense(len(label_map), activation='softmax'))
@@ -91,9 +94,44 @@ def train_and_eval(model_path='models/LSTM', random_state=42):
     print('Test set\n  Loss: {:0.3f}\n  Accuracy: {:0.3f}'.format(accr[0], accr[1]))
 
     # save model
-    model.save(model_path)
+    model.save(osp.join(model_path, 'model'))
+    np.save(osp.join(model_path, 'word_index.npy'), word_index, allow_pickle=True)
 
-    return model
+    return model, word_index
+
+
+def load_model(model_path):
+    model = keras.models.load_model(osp.join(model_path, 'model'))
+    word_index = np.load(osp.join(model_path, 'word_index.npy'), allow_pickle=True).item()
+    return model, word_index
+
+
+def tsne_visualization(model, word_index):
+    index_word = dict(zip(word_index.values(), word_index.keys()))
+    # model.summary()
+    embedding_weights = model.get_layer("embedding").get_weights()[0]
+    embedding_weights = embedding_weights[:len(word_index), :]
+
+    tsne = TSNE(n_components=2)
+    tsne_embedding = tsne.fit_transform(embedding_weights)
+
+    # print(tsne_embedding.shape)
+
+    # plot
+    plt.rcParams['font.sans-serif'] = ['SimHei']
+    plt.subplots(figsize=(14, 10))
+    x = tsne_embedding[1:201, 0]
+    y = tsne_embedding[1:201, 1]
+    plt.scatter(x, y)
+
+    plt.show()
+
+    plt.subplots(figsize=(14, 10))
+    for i in range(200):
+        plt.text(x[i], y[i], index_word[i + 1])
+
+    plt.scatter(x, y)
+    plt.show()
 
 
 def get_dataset(mode='all'):
@@ -131,4 +169,6 @@ def draw_dataset_len_histogram(bins=10, max_len=None):
 
 
 if __name__ == "__main__":
-    train_and_eval()
+    # train_and_eval('models/LSTM_zero_mask')
+    m, wi = load_model('models/LSTM_zero_mask')
+    tsne_visualization(m, wi)
