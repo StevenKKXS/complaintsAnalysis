@@ -63,7 +63,7 @@ def get_model(max_nb_words=50000, max_seq_len=150, embedding_dim=32, classificat
 
 
 def main():
-    model_path = 'models/LSTM'
+    model_path = 'models/LSTM_level2'
     random_state = 42
 
     # load data
@@ -74,6 +74,15 @@ def main():
     text_list = train_text_list + val_text_list + test_text_list
 
     Y, label_map = onehot_encoder(label_list)
+
+    count_list = np.zeros(len(label_map))
+    for lab in label_list:
+        count_list[label_map[lab]] += 1
+    x = list(range(len(label_map)))
+    plt.subplots(figsize=(14, 10))
+    plt.bar(x, count_list, width=1)
+    plt.show()
+    assert 0
 
     # 设置最频繁使用的25000个词
     MAX_NB_WORDS = 25000
@@ -250,6 +259,6 @@ def load_example():
 
 if __name__ == "__main__":
     # main
-    # main()
+    main()
     # load model example
-    load_example()
+    # load_example()
