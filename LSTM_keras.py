@@ -30,16 +30,16 @@ import os.path as osp
 from data_process import *
 
 
-def onehot_encoder(labels):
+def onehot_encoder(labels, label_map=None):
     label_set = set()
     for lab in labels:
         label_set.add(lab)
 
     label_id = list(range(len(label_set)))
-    label_map = dict()
-    for lab, lab_id in zip(label_set, label_id):
-        label_map.update({lab: lab_id})
-
+    if label_map is None:
+        label_map = dict()
+        for lab, lab_id in zip(label_set, label_id):
+            label_map.update({lab: lab_id})
     onehot_len = len(label_map)
     label_onehot = np.zeros((len(labels), len(label_map)))
     for i in range(len(labels)):
@@ -113,7 +113,7 @@ def main():
     loss, acc = evaluate(model, X_test, Y_test)
     print('Test set\n  Loss: {:0.3f}\n  Accuracy: {:0.3f}'.format(loss, acc))
 
-    model_zip = {'model': model, 'tokenizer': tokenizer, 'history': history}
+    model_zip = {'model': model, 'tokenizer': tokenizer, 'label_map': label_map, 'history': history}
     # save model
     save_model(model_path, model_zip)
 
@@ -136,10 +136,12 @@ def save_model(save_path, model_zip):
         os.makedirs(save_path)
     model = model_zip.get('model')
     tokenizer = model_zip.get('tokenizer')
+    label_map = model_zip.get('label_map')
     history = model_zip.get(tokenizer)
     model.save(osp.join(save_path, 'model'))
     with open(osp.join(save_path, 'tokenizer.pickle'), 'wb') as handle:
         pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    np.save(osp.join(save_path, 'label_map.npy'), label_map, allow_pickle=True)
     with open(osp.join(save_path, 'history.pickle'), 'wb') as handle:
         pickle.dump(history, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -148,9 +150,10 @@ def load_model(model_path):
     model = keras.models.load_model(osp.join(model_path, 'model'))
     with open(osp.join(model_path, 'tokenizer.pickle'), 'rb') as handle:
         tokenizer = pickle.load(handle)
+    label_map = np.load(osp.join(model_path, 'label_map.npy'), allow_pickle=True).item()
     with open(osp.join(model_path, 'history.pickle'), 'rb') as handle:
         history = pickle.load(handle)
-    model_zip = {'model': model, 'tokenizer': tokenizer, 'history': history}
+    model_zip = {'model': model, 'tokenizer': tokenizer, 'label_map': label_map, 'history': history}
     return model_zip
 
 
@@ -217,7 +220,36 @@ def draw_dataset_len_histogram(bins=10, max_len=None):
         print("Total text count = " + str(len(text_list)))
 
 
+def load_example():
+    # load model
+    model_zip = load_model('models/LSTM')
+
+    # 解压model_zip
+    m, token, label_m, his = model_zip.values()
+
+    # load data
+    train_label_list, train_text_list, val_label_list, val_text_list, test_label_list, test_text_list, class_table = get_data(
+        1)
+
+    # 将数据合成一个大的数据集
+    label_list = train_label_list + val_label_list + test_label_list
+    text_list = train_text_list + val_text_list + test_text_list
+
+    # label encoder 如果指定了label_map，则不会新统计出一个label_map
+    Y, label_map = onehot_encoder(label_list, label_m)
+    X = token.texts_to_sequences(text_list)
+    X = pad_sequences(X, maxlen=150)
+
+    # 拆分测试训练集，因为data preprocess里面不能固定随机数，所以这里测试集里面会有训练集的数据，正确率偏高
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.10, random_state=42)
+
+    # 测试使用方法
+    loss, acc = evaluate(m, X_train, Y_train)
+    print('Loss : {:0.3f}, Accuracy : {:0.3f}'.format(loss, acc))
+
+
 if __name__ == "__main__":
-    main()
-    # m, token = load_model('models/LSTM_zero_mask')
-    # tsne_visualization(m, token)
+    # main
+    # main()
+    # load model example
+    load_example()
