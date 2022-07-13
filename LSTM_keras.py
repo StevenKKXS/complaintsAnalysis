@@ -9,7 +9,6 @@ import pandas as pd
 import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.manifold import TSNE
 
 plt.rcParams['font.sans-serif'] = ['SimHei']
 plt.rcParams['axes.unicode_minus'] = False
@@ -28,25 +27,7 @@ import pickle
 import os.path as osp
 
 from data_process import *
-
-
-def onehot_encoder(labels, label_map=None):
-    label_set = set()
-    for lab in labels:
-        label_set.add(lab)
-
-    label_id = list(range(len(label_set)))
-    if label_map is None:
-        label_map = dict()
-        for lab, lab_id in zip(label_set, label_id):
-            label_map.update({lab: lab_id})
-    onehot_len = len(label_map)
-    label_onehot = np.zeros((len(labels), len(label_map)))
-    for i in range(len(labels)):
-        label_id = label_map[labels[i]]
-        label_onehot[i, label_id] = 1
-
-    return label_onehot, label_map
+from visualization_utils import *
 
 
 def get_model(max_nb_words=50000, max_seq_len=150, embedding_dim=32, classification_num=20):
@@ -67,14 +48,11 @@ def main():
     random_state = 42
 
     # load data
-    train_label_list, train_text_list, val_label_list, val_text_list, test_label_list, test_text_list, class_table = get_data(
-        1)
-
-    label_list = train_label_list + val_label_list + test_label_list
-    text_list = train_text_list + val_text_list + test_text_list
+    label_list, text_list = get_data(label_level=1)
 
     Y, label_map = onehot_encoder(label_list)
 
+    '''
     count_list = np.zeros(len(label_map))
     for lab in label_list:
         count_list[label_map[lab]] += 1
@@ -82,7 +60,7 @@ def main():
     plt.subplots(figsize=(14, 10))
     plt.bar(x, count_list, width=1)
     plt.show()
-    assert 0
+    '''
 
     # 设置最频繁使用的25000个词
     MAX_NB_WORDS = 25000
@@ -166,70 +144,11 @@ def load_model(model_path):
     return model_zip
 
 
-def tsne_visualization(model, tokenizer):
-    word_index = tokenizer.word_index
-    index_word = dict(zip(word_index.values(), word_index.keys()))
-    # model.summary()
-    embedding_weights = model.get_layer("embedding").get_weights()[0]
-    embedding_weights = embedding_weights[:len(word_index), :]
-
-    tsne = TSNE(n_components=2)
-    tsne_embedding = tsne.fit_transform(embedding_weights)
-
-    # print(tsne_embedding.shape)
-
-    # plot
-    plt.rcParams['font.sans-serif'] = ['SimHei']
-    plt.subplots(figsize=(14, 10))
-    x = tsne_embedding[1:201, 0]
-    y = tsne_embedding[1:201, 1]
-    plt.scatter(x, y)
-
-    plt.show()
-
-    plt.subplots(figsize=(14, 10))
-    for i in range(200):
-        plt.text(x[i], y[i], index_word[i + 1])
-
-    plt.scatter(x, y)
-    plt.show()
-
-
-def get_dataset(mode='all'):
-    # load data
-    train_label_list, train_text_list, val_label_list, val_text_list, test_label_list, test_text_list, class_table = get_data(
-        1)
-    if mode == 'all':
-        text_list = train_text_list + val_text_list + test_text_list
-        label_list = train_label_list + val_label_list + test_label_list
-        return text_list, label_list
-    elif mode == 'train':
-        text_list = train_text_list + val_text_list
-        label_list = train_label_list + val_label_list
-        return text_list, label_list
-    else:
-        return test_text_list, test_label_list
-
-
-def draw_dataset_len_histogram(bins=10, max_len=None):
-    text_list, label_list = get_dataset(mode='all')
-    text_lens = []
-    over_max_len_count = 0
-    for text in text_list:
-        if max_len is not None and len(text) > max_len:
-            over_max_len_count += 1
-            continue
-        text_lens.append(len(text))
-    plt.hist(text_lens, bins=bins)
-    plt.show()
-
-    if max_len is not None:
-        print("Max len is set to " + str(max_len))
-        print("Longer than max_len = " + str(over_max_len_count))
-        print("Total text count = " + str(len(text_list)))
-
-
 def load_example():
+    '''
+    一个简要的读取模型的例子
+    :return:
+    '''
     # load model
     model_zip = load_model('models/LSTM')
 
@@ -237,12 +156,7 @@ def load_example():
     m, token, label_m, his = model_zip.values()
 
     # load data
-    train_label_list, train_text_list, val_label_list, val_text_list, test_label_list, test_text_list, class_table = get_data(
-        1)
-
-    # 将数据合成一个大的数据集
-    label_list = train_label_list + val_label_list + test_label_list
-    text_list = train_text_list + val_text_list + test_text_list
+    label_list, text_list = get_data(1)
 
     # label encoder 如果指定了label_map，则不会新统计出一个label_map
     Y, label_map = onehot_encoder(label_list, label_m)
