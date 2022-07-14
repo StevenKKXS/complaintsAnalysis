@@ -1,6 +1,7 @@
 # ignore pycharm ide files
 .idea
 __pycache__
+tsne_cache
 
 # ignore trained model
 models

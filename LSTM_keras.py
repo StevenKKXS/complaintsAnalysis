@@ -43,68 +43,6 @@ def get_model(max_nb_words=50000, max_seq_len=150, embedding_dim=32, classificat
     return model_zip
 
 
-def main():
-    model_path = 'models/LSTM_level2'
-    random_state = 42
-
-    # load data
-    label_list, text_list = get_data(label_level=1)
-
-    Y, label_map = onehot_encoder(label_list)
-
-    '''
-    count_list = np.zeros(len(label_map))
-    for lab in label_list:
-        count_list[label_map[lab]] += 1
-    x = list(range(len(label_map)))
-    plt.subplots(figsize=(14, 10))
-    plt.bar(x, count_list, width=1)
-    plt.show()
-    '''
-
-    # 设置最频繁使用的25000个词
-    MAX_NB_WORDS = 25000
-    # 每条cut_review最大的长度
-    MAX_SEQUENCE_LENGTH = 150
-    # 设置Embeddingceng层的维度
-    EMBEDDING_DIM = 32
-
-    # get model
-    model_zip = get_model(max_nb_words=MAX_NB_WORDS,
-                          max_seq_len=MAX_SEQUENCE_LENGTH,
-                          embedding_dim=EMBEDDING_DIM,
-                          classification_num=len(label_map))
-
-    model, tokenizer = model_zip.values()
-
-    tokenizer.fit_on_texts(text_list)
-    word_index = tokenizer.word_index
-    print('共有 %s 个不相同的词语.' % len(word_index))
-
-    X = tokenizer.texts_to_sequences(text_list)
-
-    # 填充X,让X的各个列的长度统一
-    X = pad_sequences(X, maxlen=MAX_SEQUENCE_LENGTH)
-
-    print(X.shape)
-    # print(Y.shape)
-
-    # 拆分训练集和测试集
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.10, random_state=random_state)
-
-    epochs = 5
-    batch_size = 64
-
-    model, history = train(model, X_train, Y_train, epochs=epochs, batch_size=batch_size)
-
-    loss, acc = evaluate(model, X_test, Y_test)
-    print('Test set\n  Loss: {:0.3f}\n  Accuracy: {:0.3f}'.format(loss, acc))
-
-    model_zip = {'model': model, 'tokenizer': tokenizer, 'label_map': label_map, 'history': history}
-    # save model
-    save_model(model_path, model_zip)
-
-
 def train(model, train_set, train_label, epochs=5, batch_size=64):
     history = model.fit(train_set, train_label, epochs=epochs, batch_size=batch_size, validation_split=0.1,
                         callbacks=[EarlyStopping(monitor='val_loss', patience=3, min_delta=0.0001)])
@@ -171,8 +109,76 @@ def load_example():
     print('Loss : {:0.3f}, Accuracy : {:0.3f}'.format(loss, acc))
 
 
+def main():
+    model_path = 'models/LSTM_level2'
+    random_state = 42
+
+    # load data
+    label_list, text_list = get_data(label_level=1)
+
+    Y, label_map = onehot_encoder(label_list)
+
+    '''
+    count_list = np.zeros(len(label_map))
+    for lab in label_list:
+        count_list[label_map[lab]] += 1
+    x = list(range(len(label_map)))
+    plt.subplots(figsize=(14, 10))
+    plt.bar(x, count_list, width=1)
+    plt.show()
+    '''
+
+    # 设置最频繁使用的25000个词
+    MAX_NB_WORDS = 25000
+    # 每条cut_review最大的长度
+    MAX_SEQUENCE_LENGTH = 150
+    # 设置Embeddingceng层的维度
+    EMBEDDING_DIM = 32
+
+    # get model
+    model_zip = get_model(max_nb_words=MAX_NB_WORDS,
+                          max_seq_len=MAX_SEQUENCE_LENGTH,
+                          embedding_dim=EMBEDDING_DIM,
+                          classification_num=len(label_map))
+
+    model, tokenizer = model_zip.values()
+
+    tokenizer.fit_on_texts(text_list)
+    word_index = tokenizer.word_index
+    print('共有 %s 个不相同的词语.' % len(word_index))
+
+    X = tokenizer.texts_to_sequences(text_list)
+
+    # 填充X,让X的各个列的长度统一
+    X = pad_sequences(X, maxlen=MAX_SEQUENCE_LENGTH)
+
+    print(X.shape)
+    # print(Y.shape)
+
+    # 拆分训练集和测试集
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.10, random_state=random_state)
+
+    epochs = 5
+    batch_size = 64
+
+    model, history = train(model, X_train, Y_train, epochs=epochs, batch_size=batch_size)
+
+    loss, acc = evaluate(model, X_test, Y_test)
+    print('Test set\n  Loss: {:0.3f}\n  Accuracy: {:0.3f}'.format(loss, acc))
+
+    model_zip = {'model': model, 'tokenizer': tokenizer, 'label_map': label_map, 'history': history}
+    # save model
+    save_model(model_path, model_zip)
+
+
+def tsne_test():
+    # visualization
+    tsne_visualization_3d(model_path='models/LSTM')
+
+
 if __name__ == "__main__":
     # main
-    main()
+    # main()
     # load model example
     # load_example()
+    tsne_test()
