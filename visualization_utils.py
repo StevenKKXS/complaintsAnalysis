@@ -59,7 +59,7 @@ def tsne_visualization(model, tokenizer):
     plt.show()
 
 
-def tsne_visualization_3d(model_path, is_use_cache=True):
+def tsne_visualization_3d(model_path, show_head_num=None, is_use_cache=True):
     pattern = re.compile(r'[\\/]')
     model_name = re.split(pattern, model_path)[-1]
     cache_dir = 'tsne_cache'
@@ -94,8 +94,9 @@ def tsne_visualization_3d(model_path, is_use_cache=True):
         df = pd.DataFrame(tsne_dict)
         if is_use_cache:
             # save cache
-            df.to_csv(osp.join('tsne_cache', 'tsne_3d_LSTM.csv'))
-
+            df.to_csv(osp.join(cache_dir, cache_file))
+    if show_head_num is not None:
+        df = df.head(show_head_num)
     # visualization
     fig = px.scatter_3d(df, x='x', y='y', z='z', color='project_len', hover_name='word')
     fig.show()

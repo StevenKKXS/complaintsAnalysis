@@ -27,7 +27,6 @@ import pickle
 import os.path as osp
 
 from data_process import *
-from visualization_utils import *
 
 
 def get_model(max_nb_words=50000, max_seq_len=150, embedding_dim=32, classification_num=20):
@@ -62,7 +61,7 @@ def save_model(save_path, model_zip):
     model = model_zip.get('model')
     tokenizer = model_zip.get('tokenizer')
     label_map = model_zip.get('label_map')
-    history = model_zip.get(tokenizer)
+    history = model_zip.get('history')
     model.save(osp.join(save_path, 'model'))
     with open(osp.join(save_path, 'tokenizer.pickle'), 'wb') as handle:
         pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -110,7 +109,7 @@ def load_example():
 
 
 def main():
-    model_path = 'models/LSTM_level2'
+    model_path = 'models/LSTM'
     random_state = 42
 
     # load data
@@ -158,7 +157,7 @@ def main():
     # 拆分训练集和测试集
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.10, random_state=random_state)
 
-    epochs = 5
+    epochs = 30
     batch_size = 64
 
     model, history = train(model, X_train, Y_train, epochs=epochs, batch_size=batch_size)
@@ -166,14 +165,28 @@ def main():
     loss, acc = evaluate(model, X_test, Y_test)
     print('Test set\n  Loss: {:0.3f}\n  Accuracy: {:0.3f}'.format(loss, acc))
 
-    model_zip = {'model': model, 'tokenizer': tokenizer, 'label_map': label_map, 'history': history}
+    model_zip = {'model': model, 'tokenizer': tokenizer, 'label_map': label_map, 'history': history.history}
     # save model
     save_model(model_path, model_zip)
 
 
-def tsne_test():
-    # visualization
-    tsne_visualization_3d(model_path='models/LSTM')
+def show_train_loss_and_acc(model_path):
+    model_zip = load_model(model_path)
+    m, t, l, his = model_zip.values()
+    print(his.keys())
+    plt.subplots(figsize=(8, 6))
+    plt.title('Training Loss & Validation Loss')
+    plt.plot(his['val_loss'], label='Val Loss')
+    plt.plot(his['loss'], label='Train Loss')
+    plt.legend()
+    plt.show()
+
+    plt.subplots(figsize=(8, 6))
+    plt.title('Training Acc & Validation Acc')
+    plt.plot(his['val_accuracy'], label='Val Acc')
+    plt.plot(his['accuracy'], label='Train Acc')
+    plt.legend()
+    plt.show()
 
 
 if __name__ == "__main__":
@@ -181,4 +194,6 @@ if __name__ == "__main__":
     # main()
     # load model example
     # load_example()
-    tsne_test()
+    # show_train_loss_and_acc('models/LSTM')
+    pass
+
